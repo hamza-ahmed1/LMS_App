@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "Eduverse",
+    "slug": "eduverse-lms",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#0F5EFE"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.eduverse.lms"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0F5EFE"
+      },
+      "package": "com.eduverse.lms"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
