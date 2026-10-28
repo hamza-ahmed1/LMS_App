@@ -10,6 +10,9 @@ export interface AuthResponse {
   accessToken: string;
   accessTokenExpiresAt: string;
   user: UserDto;
+  /** Returned only to mobile clients (X-Client-Type: mobile); browsers use a cookie instead. */
+  refreshToken?: string;
+  refreshTokenExpiresAt?: string;
 }
 
 // ===== Student (Home screen) =====
@@ -33,6 +36,29 @@ export interface StudentProfile {
   status?: string | null;
   gender?: string | null;
   fatherName?: string | null;
+  department?: string | null;
+}
+
+// ===== Notifications =====
+// Same shape as the SignalR "ReceiveNotification" payload
+export interface AppNotification {
+  id: string;
+  title: string;
+  message: string;
+  priority: 'Normal' | 'Important' | 'Urgent';
+  senderName: string;
+  senderRole: string;
+  createdAt: string;
+  isRead: boolean;
+  readAt?: string | null;
+}
+
+export interface NotificationInbox {
+  items: AppNotification[];
+  total: number;
+  unreadCount: number;
+  page: number;
+  pageSize: number;
 }
 
 // ===== Attendance =====

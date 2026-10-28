@@ -1,6 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 
 const ACCESS_TOKEN_KEY = 'eduverse_access_token';
+const REFRESH_TOKEN_KEY = 'eduverse_refresh_token';
 const USER_KEY = 'eduverse_user';
 
 export const tokenStorage = {
@@ -13,6 +14,15 @@ export const tokenStorage = {
   async clearAccessToken(): Promise<void> {
     await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
   },
+  async getRefreshToken(): Promise<string | null> {
+    return SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+  },
+  async setRefreshToken(token: string): Promise<void> {
+    await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, token);
+  },
+  async clearRefreshToken(): Promise<void> {
+    await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+  },
   async getUser<T>(): Promise<T | null> {
     const raw = await SecureStore.getItemAsync(USER_KEY);
     return raw ? (JSON.parse(raw) as T) : null;
@@ -24,6 +34,6 @@ export const tokenStorage = {
     await SecureStore.deleteItemAsync(USER_KEY);
   },
   async clearAll(): Promise<void> {
-    await Promise.all([this.clearAccessToken(), this.clearUser()]);
+    await Promise.all([this.clearAccessToken(), this.clearRefreshToken(), this.clearUser()]);
   },
 };

@@ -56,6 +56,7 @@ export default function HomeScreen() {
         <Card>
           <InfoRow label="Student ID" value={student?.studentId} />
           <InfoRow label="Section" value={student?.section} />
+          <InfoRow label="Department" value={student?.department} />
           <InfoRow label="Batch" value={student?.batch} />
           <InfoRow label="Major Subject" value={student?.majorSubject} />
           <InfoRow label="Campus" value={student?.campus} />

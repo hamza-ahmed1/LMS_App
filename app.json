@@ -4,24 +4,42 @@
     "slug": "eduverse-lms",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "backgroundColor": "#0F5EFE"
-    },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.eduverse.lms"
+      "bundleIdentifier": "com.eduverse.lms",
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#0F5EFE"
       },
-      "package": "com.eduverse.lms"
+      "package": "com.eduverse.lms",
+      "permissions": [
+        "POST_NOTIFICATIONS"
+      ]
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    }
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0F5EFE"
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#0F5EFE"
+        }
+      ],
+      "expo-background-task"
+    ]
   }
 }

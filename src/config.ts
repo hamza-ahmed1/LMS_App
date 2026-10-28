@@ -1,3 +1,5 @@
+import Constants from 'expo-constants';
+
 /**
  * ============================================================
  *  EDIT THIS FILE TO POINT THE APP AT YOUR BACKEND
@@ -19,7 +21,25 @@
  *   Mac/Linux: ifconfig | grep inet
  * ============================================================
  */
-export const API_BASE_URL = 'http://192.168.1.2:5000';
+const CONFIGURED_API_BASE_URL = 'http://192.168.1.2:5000';
+
+/** Port the ASP.NET backend listens on (launchSettings "http" profile). */
+const DEV_API_PORT = 5000;
+
+/**
+ * In development the phone already reaches this PC through the Expo dev server
+ * (e.g. "192.168.1.6:8081"), so the API is assumed to run on that same machine.
+ * This keeps working when the PC's IP changes. Release builds, or a dev server
+ * reached via localhost/USB, use CONFIGURED_API_BASE_URL above.
+ */
+function apiUrlFromDevServer(): string | null {
+  if (!__DEV__) return null;
+  const host = Constants.expoConfig?.hostUri?.split(':')[0];
+  if (!host || host === 'localhost' || host === '127.0.0.1') return null;
+  return `http://${host}:${DEV_API_PORT}`;
+}
+
+export const API_BASE_URL = apiUrlFromDevServer() ?? CONFIGURED_API_BASE_URL;
 
 export const APP_NAME = 'Eduverse';
 

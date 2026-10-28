@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = useCallback(async () => {
     try {
-      await logoutApi();
+      await logoutApi(await tokenStorage.getRefreshToken());
     } catch {
       // Ignore network errors on logout — clear local state regardless.
     }
@@ -78,6 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async (email: string, password: string) => {
       const res = await loginApi({ email, password });
       await tokenStorage.setAccessToken(res.accessToken);
+      if (res.refreshToken) await tokenStorage.setRefreshToken(res.refreshToken);
       await tokenStorage.setUser(res.user);
       setUser(res.user);
       await loadStudentProfile(res.user.id);

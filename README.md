@@ -1,4 +1,4 @@
-# Eduverse — Student LMS App (React Native / Expo)
+# Eduverse — Student LMS App (React Native / Expo SDK 58)
 
 A student-facing mobile app with 5 screens: **Home**, **Attendance**, **Marks**,
 **Fee Chalan**, and **Settings** (Profile + Change Password), plus a full
@@ -54,7 +54,8 @@ Scan the QR code with Expo Go (Android) or the Camera app (iOS), or press
 | **Fee Chalan** | `GET /api/invoice/pending/{studentId}` — status 0 = Unpaid, 1 = Paid |
 | **Settings → My Profile** | Read-only view of the student record |
 | **Settings → Change Password** | `POST /api/auth/change-password` |
-| **Logout** | `POST /api/auth/logout` |
+| **Alerts (Notifications)** | `GET /api/notifications`, `POST /api/notifications/{id}/read`, `POST /api/notifications/read-all`, live updates over SignalR (`/hubs/notifications`) |
+| **Logout** | `POST /api/auth/logout` (revokes this device's refresh token) |
 
 ## Known quirks carried over from the API (not bugs on our end)
 
@@ -73,15 +74,35 @@ Scan the QR code with Expo Go (Android) or the Camera app (iOS), or press
 
 ## Auth session notes
 
-- The access token (JWT) is stored securely on-device with `expo-secure-store`
-  and attached to every request as a `Bearer` token.
-- The backend's `/api/auth/refresh` endpoint relies on an `httpOnly` cookie,
-  which works automatically in a browser but doesn't behave the same way in
-  React Native. Right now, a `401` response just signs the user out cleanly
-  and sends them back to the Login screen. If you want silent token refresh
-  on mobile, the simplest backend change is to also return the refresh token
-  in the JSON body (not only as a cookie) so the app can store and send it
-  explicitly — happy to wire that up once that change is in place.
+- Tokens are stored on-device with `expo-secure-store`; the access token is sent as a `Bearer` token.
+- Login sends `X-Client-Type: mobile`, so the backend also returns the **refresh token** in the JSON body
+  (browsers keep using the httpOnly cookie). Access tokens last 30 minutes; when one expires, the axios
+  interceptor (`src/api/client.ts`) swaps the refresh token for a new one and retries the request.
+  The refresh token stays valid for 7 days after the student last used the app, so a student who opens
+  it at least weekly stays signed in. A rejected refresh signs the student out.
+
+## Notifications
+
+Students receive notices sent by their teachers, HOD and administration.
+
+- **App open:** a SignalR connection (`src/context/NotificationsContext.tsx`) delivers notices instantly,
+  shows a system notification, updates the **Alerts** tab badge and confirms receipt to the server.
+  The connection is held only while the app is in the foreground and the inbox is reloaded whenever the
+  app comes back, so nothing is missed.
+- **App closed:** a background task (`src/notifications/backgroundCheck.ts`, `expo-background-task`)
+  runs about every 15 minutes (the OS decides the exact timing and may stretch it to save battery). It keeps
+  running after the app is swiped away and after a reboot on Android. It shows a system notification
+  for each new notice (or one summary when more than 3 arrive) and never alerts twice for the same notice.
+- Tapping a notification opens the **Alerts** tab. Notification permission is requested after login
+  (needed on Android 13+ and iOS).
+- **Expo Go vs. development build:** Expo Go (SDK 53+) lacks native parts of `expo-notifications` and the
+  background-task modules, so the app skips them there (`src/notifications/nativeModules.ts`). In Expo Go the
+  app works and the Alerts tab updates live, but there are no system notifications and no background check.
+  For the full behaviour, run a development build: `npx expo run:android` (option 2 in `run-app.bat`).
+- Expo Go must match the project's SDK (58). Use `run-app.bat` to start the dev server: it advertises this
+  PC's Wi-Fi address (Expo's own detection falls back to 127.0.0.1 on Windows builds without `wmic`).
+- Instant alerts while the app is fully closed would need remote push (Firebase Cloud Messaging / APNs via an
+  Expo or Firebase account), which is not set up; the background check covers that case with a short delay.
 
 ## Project structure
 
@@ -90,7 +111,8 @@ App.tsx
 src/
   api/            axios client + one file per feature (auth, student, attendance, marks, fees)
   components/     shared UI (Card, TextField, PrimaryButton, state views, etc.)
-  context/        AuthContext — session state, login/logout, student profile
+  context/        AuthContext (session, student profile), NotificationsContext (inbox + live connection)
+  notifications/  system notifications, background check task, already-alerted store
   navigation/     AuthStack, bottom-tab MainTabs, RootNavigator
   screens/        one file per screen
   theme/          colors, spacing, typography tokens

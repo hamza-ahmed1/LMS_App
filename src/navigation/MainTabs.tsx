@@ -9,6 +9,8 @@ import FeeChalanScreen from '@/screens/FeeChalanScreen';
 import SettingsScreen from '@/screens/SettingsScreen';
 import ProfileScreen from '@/screens/ProfileScreen';
 import ChangePasswordScreen from '@/screens/ChangePasswordScreen';
+import NotificationsScreen from '@/screens/NotificationsScreen';
+import { useNotificationsInbox } from '@/context/NotificationsContext';
 import { colors } from '@/theme/theme';
 
 export type MainTabParamList = {
@@ -16,6 +18,7 @@ export type MainTabParamList = {
   Attendance: undefined;
   Marks: undefined;
   FeeChalan: undefined;
+  Notifications: undefined;
   Settings: undefined;
 };
 
@@ -47,6 +50,7 @@ const ICONS: Record<keyof MainTabParamList, keyof typeof Ionicons.glyphMap> = {
   Attendance: 'checkmark-done-circle',
   Marks: 'school',
   FeeChalan: 'receipt',
+  Notifications: 'notifications',
   Settings: 'settings',
 };
 
@@ -55,10 +59,12 @@ const LABELS: Record<keyof MainTabParamList, string> = {
   Attendance: 'Attendance',
   Marks: 'Marks',
   FeeChalan: 'Fee Chalan',
+  Notifications: 'Alerts',
   Settings: 'Settings',
 };
 
 export default function MainTabs() {
+  const { unreadCount } = useNotificationsInbox();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -83,6 +89,11 @@ export default function MainTabs() {
       <Tab.Screen name="Attendance" component={AttendanceScreen} />
       <Tab.Screen name="Marks" component={MarksScreen} />
       <Tab.Screen name="FeeChalan" component={FeeChalanScreen} />
+      <Tab.Screen
+        name="Notifications"
+        component={NotificationsScreen}
+        options={{ tabBarBadge: unreadCount > 0 ? (unreadCount > 99 ? '99+' : unreadCount) : undefined }}
+      />
       <Tab.Screen name="Settings" component={SettingsStack} />
     </Tab.Navigator>
   );

@@ -1,6 +1,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { API_BASE_URL, API_TIMEOUT_MS } from '@/config';
 import { tokenStorage } from '@/utils/tokenStorage';
+import { refreshSession } from '@/api/session';
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -25,17 +26,26 @@ export function setUnauthorizedHandler(handler: () => void) {
   onUnauthorized = handler;
 }
 
+type RetriableConfig = InternalAxiosRequestConfig & { _retried?: boolean };
+
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    if (error.response?.status === 401) {
-      // NOTE: the backend's /api/auth/refresh relies on an httpOnly
-      // refresh-token cookie, which browsers handle automatically but
-      // React Native does not persist the same way across requests.
-      // If you want silent refresh on mobile, the simplest fix is to
-      // also return the refresh token in the login/refresh JSON body
-      // so it can be stored and sent explicitly. Until then, a 401
-      // here just signs the user out cleanly.
+    const original = error.config as RetriableConfig | undefined;
+    const isAuthCall = original?.url?.startsWith('/api/auth/login') || original?.url?.startsWith('/api/auth/refresh');
+
+    if (error.response?.status === 401 && original && !original._retried && !isAuthCall) {
+      // The access token expired: swap the stored refresh token for a new one and retry once
+      original._retried = true;
+      const token = await refreshSession();
+      if (token) {
+        original.headers.Authorization = `Bearer ${token}`;
+        return apiClient(original);
+      }
+    }
+
+    if (error.response?.status === 401 && !isAuthCall) {
+      // Refresh token missing, expired or revoked: sign out cleanly
       await tokenStorage.clearAll();
       onUnauthorized?.();
     }

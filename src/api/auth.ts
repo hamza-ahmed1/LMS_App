@@ -7,15 +7,19 @@ export interface LoginPayload {
 }
 
 export async function login(payload: LoginPayload): Promise<AuthResponse> {
-  const { data } = await apiClient.post<AuthResponse>('/api/auth/login', {
-    Email: payload.email,
-    Password: payload.password,
-  });
+  // The header asks the backend to include the refresh token in the body,
+  // since React Native can't rely on the httpOnly cookie browsers use.
+  const { data } = await apiClient.post<AuthResponse>(
+    '/api/auth/login',
+    { Email: payload.email, Password: payload.password },
+    { headers: { 'X-Client-Type': 'mobile' } }
+  );
   return data;
 }
 
-export async function logout(): Promise<void> {
-  await apiClient.post('/api/auth/logout');
+/** Revokes this device's refresh token on the server. */
+export async function logout(refreshToken: string | null): Promise<void> {
+  await apiClient.post('/api/auth/logout', { refreshToken });
 }
 
 export interface ChangePasswordPayload {

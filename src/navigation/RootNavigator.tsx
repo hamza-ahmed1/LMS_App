@@ -5,6 +5,7 @@ import { LoadingView } from '@/components/StateViews';
 import ScreenContainer from '@/components/ScreenContainer';
 import AuthStack from './AuthStack';
 import MainTabs from './MainTabs';
+import { flushPendingNavigation, navigationRef } from './navigationRef';
 
 export default function RootNavigator() {
   const { isBootstrapping, isAuthenticated } = useAuth();
@@ -17,5 +18,9 @@ export default function RootNavigator() {
     );
   }
 
-  return <NavigationContainer>{isAuthenticated ? <MainTabs /> : <AuthStack />}</NavigationContainer>;
+  return (
+    <NavigationContainer ref={navigationRef} onReady={flushPendingNavigation}>
+      {isAuthenticated ? <MainTabs /> : <AuthStack />}
+    </NavigationContainer>
+  );
 }
