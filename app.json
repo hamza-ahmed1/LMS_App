@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Eduverse",
+    "name": "TCF Campus",
     "slug": "eduverse-lms",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -19,7 +19,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#0F5EFE"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
       },
       "package": "com.eduverse.lms",
       "permissions": [
@@ -30,16 +31,21 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#0F5EFE"
+          "backgroundColor": "#FFFFFF",
+          "image": "./assets/tcf-mark.png",
+          "imageWidth": 160
         }
       ],
       [
         "expo-notifications",
         {
-          "color": "#0F5EFE"
+          "color": "#0A7F3F",
+          "icon": "./assets/tcf-mark-white.png"
         }
       ],
-      "expo-background-task"
-    ]
+      "expo-background-task",
+      "expo-font"
+    ],
+    "icon": "./assets/icon.png"
   }
 }

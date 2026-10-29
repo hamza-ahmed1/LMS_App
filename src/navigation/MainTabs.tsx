@@ -10,6 +10,7 @@ import SettingsScreen from '@/screens/SettingsScreen';
 import ProfileScreen from '@/screens/ProfileScreen';
 import ChangePasswordScreen from '@/screens/ChangePasswordScreen';
 import NotificationsScreen from '@/screens/NotificationsScreen';
+import NotificationDetailScreen from '@/screens/NotificationDetailScreen';
 import { useNotificationsInbox } from '@/context/NotificationsContext';
 import { colors } from '@/theme/theme';
 
@@ -22,6 +23,11 @@ export type MainTabParamList = {
   Settings: undefined;
 };
 
+export type NotificationsStackParamList = {
+  NotificationsList: undefined;
+  NotificationDetail: { id: string };
+};
+
 export type SettingsStackParamList = {
   SettingsHome: undefined;
   Profile: undefined;
@@ -30,6 +36,16 @@ export type SettingsStackParamList = {
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const SettingsStackNav = createNativeStackNavigator<SettingsStackParamList>();
+const NotificationsStackNav = createNativeStackNavigator<NotificationsStackParamList>();
+
+function NotificationsStack() {
+  return (
+    <NotificationsStackNav.Navigator screenOptions={{ headerTintColor: colors.primary }}>
+      <NotificationsStackNav.Screen name="NotificationsList" component={NotificationsScreen} options={{ headerShown: false }} />
+      <NotificationsStackNav.Screen name="NotificationDetail" component={NotificationDetailScreen} options={{ title: 'Notification' }} />
+    </NotificationsStackNav.Navigator>
+  );
+}
 
 function SettingsStack() {
   return (
@@ -91,7 +107,7 @@ export default function MainTabs() {
       <Tab.Screen name="FeeChalan" component={FeeChalanScreen} />
       <Tab.Screen
         name="Notifications"
-        component={NotificationsScreen}
+        component={NotificationsStack}
         options={{ tabBarBadge: unreadCount > 0 ? (unreadCount > 99 ? '99+' : unreadCount) : undefined }}
       />
       <Tab.Screen name="Settings" component={SettingsStack} />

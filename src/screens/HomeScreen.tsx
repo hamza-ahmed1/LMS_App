@@ -54,10 +54,10 @@ export default function HomeScreen() {
 
         <SectionTitle title="Institute Info" />
         <Card>
-          <InfoRow label="Student ID" value={student?.studentId} />
+          <InfoRow label="Student Code" value={student?.studentCode} />
           <InfoRow label="Section" value={student?.section} />
           <InfoRow label="Department" value={student?.department} />
-          <InfoRow label="Batch" value={student?.batch} />
+          <InfoRow label="Cohort" value={student?.cohort} />
           <InfoRow label="Major Subject" value={student?.majorSubject} />
           <InfoRow label="Campus" value={student?.campus} />
           <InfoRow label="Status" value={student?.status} />

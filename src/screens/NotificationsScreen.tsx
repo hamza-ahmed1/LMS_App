@@ -1,12 +1,15 @@
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { NotificationsStackParamList } from '@/navigation/MainTabs';
 import ScreenContainer from '@/components/ScreenContainer';
 import { EmptyView } from '@/components/StateViews';
 import { useNotificationsInbox } from '@/context/NotificationsContext';
 import { colors, radius, shadow, spacing, typography } from '@/theme/theme';
 import { AppNotification } from '@/types';
 
-function formatWhen(value: string): string {
+export function formatWhen(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   const minutes = Math.floor((Date.now() - date.getTime()) / 60_000);
@@ -24,8 +27,11 @@ const STATUS_LABEL = {
   offline: 'Offline — showing saved notifications',
 } as const;
 
-export default function NotificationsScreen() {
-  const { items, unreadCount, hasMore, loading, connectionStatus, refresh, loadMore, markRead, markAllRead } = useNotificationsInbox();
+type Props = NativeStackScreenProps<NotificationsStackParamList, 'NotificationsList'>;
+
+/** Titles only; tapping one opens the full message (NotificationDetailScreen), which marks it read. */
+export default function NotificationsScreen({ navigation }: Props) {
+  const { items, unreadCount, hasMore, loading, connectionStatus, refresh, loadMore, markAllRead } = useNotificationsInbox();
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = useCallback(async () => {
@@ -37,10 +43,10 @@ export default function NotificationsScreen() {
   const renderItem = useCallback(
     ({ item }: { item: AppNotification }) => (
       <Pressable
-        onPress={() => void markRead(item.id)}
+        onPress={() => navigation.navigate('NotificationDetail', { id: item.id })}
         style={({ pressed }) => [styles.card, !item.isRead && styles.cardUnread, pressed && styles.cardPressed]}
         accessibilityRole="button"
-        accessibilityLabel={`${item.isRead ? '' : 'Unread. '}${item.title}. ${item.message}`}
+        accessibilityLabel={`${item.isRead ? '' : 'Unread. '}${item.title}. Opens details.`}
       >
         <View style={styles.cardHeader}>
           {!item.isRead ? <View style={styles.unreadDot} /> : null}
@@ -55,13 +61,18 @@ export default function NotificationsScreen() {
             </View>
           ) : null}
         </View>
-        <Text style={styles.message}>{item.message}</Text>
-        <Text style={styles.meta}>
-          {item.senderName} · {item.senderRole} · {formatWhen(item.createdAt)}
-        </Text>
+        <View style={styles.footerRow}>
+          <Text style={styles.meta} numberOfLines={1}>
+            {item.senderName} · {formatWhen(item.createdAt)}
+          </Text>
+          <View style={styles.viewDetails}>
+            <Text style={styles.viewDetailsText}>View details</Text>
+            <Ionicons name="chevron-forward" size={14} color={colors.primary} />
+          </View>
+        </View>
       </Pressable>
     ),
-    [markRead]
+    [navigation]
   );
 
   return (
@@ -193,15 +204,27 @@ const styles = StyleSheet.create({
     ...typography.small,
     fontWeight: '700',
   },
-  message: {
-    ...typography.body,
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
+  footerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: spacing.sm,
   },
   meta: {
     ...typography.small,
     color: colors.textMuted,
-    marginTop: spacing.sm,
+    flexShrink: 1,
+    marginRight: spacing.sm,
+  },
+  viewDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  viewDetailsText: {
+    ...typography.small,
+    fontWeight: '700',
+    color: colors.primary,
+    marginRight: 2,
   },
   loader: {
     marginVertical: spacing.lg,

@@ -22,10 +22,10 @@ export default function ProfileScreen() {
 
         <SectionTitle title="Institute Info" />
         <Card>
-          <InfoRow label="Student ID" value={student?.studentId} />
+          <InfoRow label="Student Code" value={student?.studentCode} />
           <InfoRow label="Section" value={student?.section} />
           <InfoRow label="Department" value={student?.department} />
-          <InfoRow label="Batch" value={student?.batch} />
+          <InfoRow label="Cohort" value={student?.cohort} />
           <InfoRow label="Major Subject" value={student?.majorSubject} />
           <InfoRow label="Campus" value={student?.campus} />
           <InfoRow label="Status" value={student?.status} />
@@ -36,6 +36,7 @@ export default function ProfileScreen() {
           <InfoRow label="Gender" value={student?.gender} />
           <InfoRow label="CNIC" value={student?.cnic} />
           <InfoRow label="Phone" value={student?.phoneNumber} />
+          <InfoRow label="Father's Name" value={student?.fatherName} />
         </Card>
 
         <View style={{ height: spacing.xl }} />

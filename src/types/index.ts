@@ -30,10 +30,13 @@ export interface StudentProfile {
   dateOfBirth?: string | null;
   enrollmentDate?: string | null;
   cnic?: string | null;
-  batch?: string | null;
+  studentCode?: string | null;
+  cohort?: string | null;
   majorSubject?: string | null;
   campus?: string | null;
+  /** "Active" or "Inactive" */
   status?: string | null;
+  isActive?: boolean;
   gender?: string | null;
   fatherName?: string | null;
   department?: string | null;
@@ -66,64 +69,65 @@ export interface StudentCourse {
   teacherSectionCourseId: string;
   courseId: string;
   courseName: string;
+  courseCode?: string | null;
   teacherId: string;
+  teacherName?: string | null;
   sectionId: string;
   sectionName: string;
 }
 
+export type AttendanceStatus = 'Present' | 'Absent' | 'Late' | 'Leave';
+
+/** Normalized from the API (see api/attendance.ts): date is the day attendance was taken. */
 export interface AttendanceRecord {
-  attendanceId?: string;
-  studentId: string;
-  courseId: string;
+  attendanceId: string;
   date: string;
-  status: string; // e.g. "Present" | "Absent" | "Leave"
-  [key: string]: any;
+  status: AttendanceStatus;
+  remarks: string | null;
+  courseId: string;
+  courseName: string | null;
 }
 
 // ===== Marks =====
 export interface ExamInfo {
   examID: string;
   title: string;
-  examTypeId: string;
   examType: string | null;
   totalMarks: number;
   isPublished: boolean;
   examDate: string;
   teacherSectionCourseId: string;
+  courseId: string;
+  courseName: string;
+  courseCode?: string | null;
 }
 
+/** Marks and remarks are null when the exam is not published yet (the server withholds them). */
 export interface ExamResult {
   examResultId: string;
   examId: string;
-  exam: ExamInfo;
   studentId: string;
-  obtainMarks: number;
-  isAbsent: boolean;
-  remarks: string;
+  obtainMarks: number | null;
+  isAbsent: boolean | null;
+  remarks: string | null;
   lastUpdate: string;
+  isPublished: boolean;
+  exam: ExamInfo;
 }
 
 // ===== Fees =====
-export interface FeeType {
-  feeTypeId: string;
-  feeCategoryId: string;
-  name: string;
+/** A fee challan (invoice) for one fee type and month. */
+export interface FeeChallan {
+  id: string;
+  invoiceNum: string;
+  feeTypeName: string;
   amount: number;
-  per: string;
-  academicTerm: string;
+  amountPaid: number;
+  amountDue: number;
+  ispaid: boolean;
+  month: string;
+  year: string;
   currency: string;
-  applicableDate: string;
-  isActive: boolean;
-}
-
-// Backend uses 0 = Unpaid, 1 = Paid
-export type InvoiceStatus = 0 | 1;
-
-export interface Invoice {
-  afId: string;
-  studentId: string;
-  feeTypeId: string;
-  feeType: FeeType;
-  status: InvoiceStatus;
+  dueDate: string;
   createdAt: string;
 }

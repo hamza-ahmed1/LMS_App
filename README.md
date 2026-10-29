@@ -1,4 +1,4 @@
-# Eduverse — Student LMS App (React Native / Expo SDK 58)
+# TCF Campus — Student App (React Native / Expo SDK 58)
 
 A student-facing mobile app with 5 screens: **Home**, **Attendance**, **Marks**,
 **Fee Chalan**, and **Settings** (Profile + Change Password), plus a full
@@ -49,9 +49,9 @@ Scan the QR code with Expo Go (Android) or the Camera app (iOS), or press
 | **Login** | `POST /api/auth/login` |
 | **Forgot Password** | `POST /api/auth/send-reset-code` → `POST /api/auth/verify-and-reset` |
 | **Home** | `GET /api/student/{userId}` — institute info, personal info, family info |
-| **Attendance** | `GET /api/attendance/student/{studentId}/courses` then `GET /api/Attendance/student/{studentId}?courseId=` per course, with a course picker and a present/total summary |
-| **Marks** | `GET /api/Examresult/student={studentId}` |
-| **Fee Chalan** | `GET /api/invoice/pending/{studentId}` — status 0 = Unpaid, 1 = Paid |
+| **Attendance** | `GET /api/attendance/student/{studentId}/courses` (code + teacher) then `GET /api/Attendance/student/{studentId}?courseId=`; dates and status are mapped in `src/api/attendance.ts` |
+| **Marks** | `GET /api/Examresult/student={studentId}` — filter by course; marks of unpublished exams are withheld by the server |
+| **Fee Challan** | `GET /api/invoice/history/{studentId}` — applicable month, due date, amount, balance |
 | **Settings → My Profile** | Read-only view of the student record |
 | **Settings → Change Password** | `POST /api/auth/change-password` |
 | **Alerts (Notifications)** | `GET /api/notifications`, `POST /api/notifications/{id}/read`, `POST /api/notifications/read-all`, live updates over SignalR (`/hubs/notifications`) |

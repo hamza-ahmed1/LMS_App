@@ -1,26 +1,34 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FlatList, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ScreenContainer from '@/components/ScreenContainer';
 import Card from '@/components/Card';
 import SectionTitle from '@/components/SectionTitle';
 import { LoadingView, ErrorView, EmptyView } from '@/components/StateViews';
 import { useAuth } from '@/context/AuthContext';
-import { getStudentCourses, getCourseAttendance } from '@/api/attendance';
+import { getStudentCourses, getCourseAttendance, summarizeAttendance } from '@/api/attendance';
 import { getApiErrorMessage } from '@/api/client';
-import { AttendanceRecord, StudentCourse } from '@/types';
+import { AttendanceRecord, AttendanceStatus, StudentCourse } from '@/types';
 import { colors, radius, spacing, typography } from '@/theme/theme';
 
-function statusColor(status: string) {
-  const s = status?.toLowerCase?.() ?? '';
-  if (s.includes('present')) return colors.success;
-  if (s.includes('absent')) return colors.danger;
-  if (s.includes('leave')) return colors.warning;
-  return colors.textMuted;
+const STATUS_COLOR: Record<AttendanceStatus, string> = {
+  Present: colors.success,
+  Late: colors.warning,
+  Leave: colors.secondary,
+  Absent: colors.danger,
+};
+
+function formatAttendanceDate(value: string): string {
+  const date = new Date(value);
+  if (!value || Number.isNaN(date.getTime())) return 'Date not recorded';
+  return date.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 export default function AttendanceScreen() {
   const { student } = useAuth();
+  const { width } = useWindowDimensions();
+  // Two course cards per row on phones, three on wider screens
+  const columns = width >= 600 ? 3 : 2;
 
   const [courses, setCourses] = useState<StudentCourse[]>([]);
   const [coursesLoading, setCoursesLoading] = useState(true);
@@ -53,8 +61,7 @@ export default function AttendanceScreen() {
       setRecordsLoading(true);
       setRecordsError(null);
       try {
-        const data = await getCourseAttendance(student.studentId, courseId);
-        setRecords(data);
+        setRecords(await getCourseAttendance(student.studentId, courseId));
       } catch (err) {
         setRecordsError(getApiErrorMessage(err, 'Could not load attendance for this course.'));
       } finally {
@@ -72,12 +79,8 @@ export default function AttendanceScreen() {
     if (selectedCourseId) loadRecords(selectedCourseId);
   }, [selectedCourseId, loadRecords]);
 
-  const summary = useMemo(() => {
-    const total = records.length;
-    const present = records.filter((r) => r.status?.toLowerCase?.().includes('present')).length;
-    const pct = total > 0 ? Math.round((present / total) * 100) : 0;
-    return { total, present, pct };
-  }, [records]);
+  const summary = useMemo(() => summarizeAttendance(records), [records]);
+  const selectedCourse = courses.find((c) => c.courseId === selectedCourseId);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -102,6 +105,8 @@ export default function AttendanceScreen() {
     );
   }
 
+  const cardWidth = `${100 / columns}%` as const;
+
   return (
     <ScreenContainer>
       <ScrollView
@@ -109,55 +114,59 @@ export default function AttendanceScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
         <Text style={styles.title}>Attendance</Text>
-        {(student?.majorSubject || student?.section) && (
-          <Text style={styles.classLabel}>
-            Class: {student?.majorSubject ?? student?.section ?? 'N/A'}
-          </Text>
-        )}
+        {student?.section ? <Text style={styles.classLabel}>{student.section}</Text> : null}
 
-        <SectionTitle title="Registered Courses" />
+        <SectionTitle title="Registered Courses" subtitle={`${courses.length} courses · tap one to see its attendance`} />
         {courses.length === 0 ? (
           <EmptyView icon="book-outline" message="No registered courses found." />
         ) : (
-          <FlatList
-            data={courses}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            keyExtractor={(item) => item.teacherSectionCourseId}
-            contentContainerStyle={styles.chipRow}
-            renderItem={({ item }) => {
+          <View style={styles.grid}>
+            {courses.map((item) => {
               const active = item.courseId === selectedCourseId;
               return (
-                <TouchableOpacity
-                  style={[styles.chip, active && styles.chipActive]}
-                  onPress={() => setSelectedCourseId(item.courseId)}
-                >
-                  <Text style={[styles.chipText, active && styles.chipTextActive]}>{item.courseName}</Text>
-                  <Text style={[styles.chipSubtext, active && styles.chipTextActive]}>{item.sectionName}</Text>
-                </TouchableOpacity>
+                <View key={item.teacherSectionCourseId} style={[styles.gridCell, { width: cardWidth }]}>
+                  <TouchableOpacity
+                    style={[styles.courseCard, active && styles.courseCardActive]}
+                    onPress={() => setSelectedCourseId(item.courseId)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active }}
+                  >
+                    <Text style={[styles.courseName, active && styles.textOnPrimary]} numberOfLines={2}>
+                      {item.courseName}
+                    </Text>
+                    <Text style={[styles.courseCode, active && styles.textOnPrimaryMuted]} numberOfLines={1}>
+                      {item.courseCode || 'No code'}
+                    </Text>
+                    {item.teacherName ? (
+                      <Text style={[styles.courseTeacher, active && styles.textOnPrimaryMuted]} numberOfLines={1}>
+                        {item.teacherName}
+                      </Text>
+                    ) : null}
+                  </TouchableOpacity>
+                </View>
               );
-            }}
-          />
+            })}
+          </View>
         )}
 
         {selectedCourseId && (
           <>
-            <SectionTitle title="Attendance Summary" />
+            <SectionTitle title="Attendance Summary" subtitle={selectedCourse ? selectedCourse.courseName : undefined} />
             <Card style={styles.summaryCard}>
-              <View style={styles.summaryItem}>
-                <Text style={styles.summaryValue}>{summary.total}</Text>
-                <Text style={styles.summaryLabel}>Classes</Text>
+              <View style={styles.summaryRow}>
+                <SummaryItem value={summary.total} label="Classes" />
+                <SummaryItem value={summary.present} label="Present" color={colors.success} />
+                <SummaryItem value={summary.late} label="Late" color={colors.warning} />
+                <SummaryItem value={summary.absent} label="Absent" color={colors.danger} />
               </View>
-              <View style={styles.summaryDivider} />
-              <View style={styles.summaryItem}>
-                <Text style={[styles.summaryValue, { color: colors.success }]}>{summary.present}</Text>
-                <Text style={styles.summaryLabel}>Present</Text>
+              <View style={styles.rateRow}>
+                <Text style={styles.rateLabel}>Attendance rate</Text>
+                <Text style={styles.rateValue}>{summary.rate}%</Text>
               </View>
-              <View style={styles.summaryDivider} />
-              <View style={styles.summaryItem}>
-                <Text style={styles.summaryValue}>{summary.pct}%</Text>
-                <Text style={styles.summaryLabel}>Rate</Text>
+              <View style={styles.rateTrack}>
+                <View style={[styles.rateFill, { width: `${summary.rate}%` }]} />
               </View>
+              <Text style={styles.rateHint}>Late arrivals count as attended.</Text>
             </Card>
 
             <SectionTitle title="Records" />
@@ -168,15 +177,16 @@ export default function AttendanceScreen() {
             ) : records.length === 0 ? (
               <EmptyView icon="calendar-outline" message="No attendance records yet for this course." />
             ) : (
-              records.map((rec, idx) => (
-                <Card key={rec.attendanceId ?? idx} style={styles.recordCard}>
+              records.map((rec) => (
+                <Card key={rec.attendanceId} style={styles.recordCard}>
                   <View style={styles.recordRow}>
                     <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
-                    <Text style={styles.recordDate}>
-                      {rec.date ? new Date(rec.date).toLocaleDateString() : 'Unknown date'}
-                    </Text>
-                    <View style={[styles.statusBadge, { backgroundColor: statusColor(rec.status) + '20' }]}>
-                      <Text style={[styles.statusText, { color: statusColor(rec.status) }]}>{rec.status ?? 'N/A'}</Text>
+                    <View style={styles.recordText}>
+                      <Text style={styles.recordDate}>{formatAttendanceDate(rec.date)}</Text>
+                      {rec.remarks ? <Text style={styles.recordRemarks}>{rec.remarks}</Text> : null}
+                    </View>
+                    <View style={[styles.statusBadge, { backgroundColor: STATUS_COLOR[rec.status] + '20' }]}>
+                      <Text style={[styles.statusText, { color: STATUS_COLOR[rec.status] }]}>{rec.status}</Text>
                     </View>
                   </View>
                 </Card>
@@ -191,33 +201,51 @@ export default function AttendanceScreen() {
   );
 }
 
+function SummaryItem({ value, label, color }: { value: number; label: string; color?: string }) {
+  return (
+    <View style={styles.summaryItem}>
+      <Text style={[styles.summaryValue, color ? { color } : null]}>{value}</Text>
+      <Text style={styles.summaryLabel}>{label}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   scroll: { padding: spacing.lg },
   title: { ...typography.h1, color: colors.textPrimary },
   classLabel: { ...typography.body, color: colors.textSecondary, marginTop: 4 },
-  chipRow: { paddingVertical: spacing.xs, gap: spacing.sm },
-  chip: {
+  grid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -spacing.xs },
+  gridCell: { padding: spacing.xs },
+  courseCard: {
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    marginRight: spacing.sm,
-    minWidth: 130,
+    padding: spacing.sm + 2,
+    minHeight: 84,
   },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { ...typography.bodyBold, color: colors.textPrimary },
-  chipSubtext: { ...typography.small, color: colors.textMuted, marginTop: 2 },
-  chipTextActive: { color: colors.white },
-  summaryCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' },
+  courseCardActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  courseName: { ...typography.bodyBold, color: colors.textPrimary },
+  courseCode: { ...typography.small, color: colors.primary, fontWeight: '700', marginTop: 4 },
+  courseTeacher: { ...typography.small, color: colors.textMuted, marginTop: 2 },
+  textOnPrimary: { color: colors.white },
+  textOnPrimaryMuted: { color: 'rgba(255,255,255,0.85)' },
+  summaryCard: { paddingVertical: spacing.md },
+  summaryRow: { flexDirection: 'row', justifyContent: 'space-between' },
   summaryItem: { alignItems: 'center', flex: 1 },
   summaryValue: { ...typography.h2, color: colors.textPrimary },
   summaryLabel: { ...typography.caption, color: colors.textMuted, marginTop: 2 },
-  summaryDivider: { width: StyleSheet.hairlineWidth, height: 36, backgroundColor: colors.border },
+  rateRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginTop: spacing.md },
+  rateLabel: { ...typography.bodyBold, color: colors.textSecondary },
+  rateValue: { ...typography.h3, color: colors.primary },
+  rateTrack: { height: 8, borderRadius: radius.full, backgroundColor: colors.primaryLight, marginTop: spacing.sm, overflow: 'hidden' },
+  rateFill: { height: '100%', borderRadius: radius.full, backgroundColor: colors.primary },
+  rateHint: { ...typography.small, color: colors.textMuted, marginTop: spacing.xs },
   recordCard: { marginBottom: spacing.sm, paddingVertical: spacing.sm },
   recordRow: { flexDirection: 'row', alignItems: 'center' },
-  recordDate: { ...typography.body, color: colors.textPrimary, marginLeft: spacing.sm, flex: 1 },
+  recordText: { flex: 1, marginLeft: spacing.sm },
+  recordDate: { ...typography.body, color: colors.textPrimary },
+  recordRemarks: { ...typography.small, color: colors.textMuted, marginTop: 2 },
   statusBadge: { paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: radius.full },
   statusText: { ...typography.small, fontWeight: '700' },
 });

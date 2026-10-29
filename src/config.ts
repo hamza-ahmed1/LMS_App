@@ -41,7 +41,7 @@ function apiUrlFromDevServer(): string | null {
 
 export const API_BASE_URL = apiUrlFromDevServer() ?? CONFIGURED_API_BASE_URL;
 
-export const APP_NAME = 'Eduverse';
+export const APP_NAME = 'TCF Campus';
 
 // How long (ms) to wait before an API call is considered failed.
 export const API_TIMEOUT_MS = 15000;

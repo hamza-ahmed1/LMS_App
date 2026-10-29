@@ -1,17 +1,20 @@
+// TCF Campus palette from The Citizens Foundation logo (leaf green #0B8A44, black wordmark).
+// primary is a touch deeper than the logo green so text on white keeps good contrast.
 export const colors = {
-  primary: '#0F5EFE',
-  primaryDark: '#0B3FB0',
-  primaryLight: '#E8EFFF',
-  secondary: '#00B894',
-  danger: '#E74C3C',
-  warning: '#F5A623',
-  success: '#22A06B',
-  background: '#F6F8FC',
+  brand: '#0B8A44',
+  primary: '#0A7F3F',
+  primaryDark: '#0B4A29',
+  primaryLight: '#E2F3E8',
+  secondary: '#0F5C34',
+  danger: '#D64545',
+  warning: '#D98E04',
+  success: '#14874B',
+  background: '#F3F8F4',
   surface: '#FFFFFF',
-  border: '#E4E9F2',
-  textPrimary: '#1A2340',
-  textSecondary: '#6B7488',
-  textMuted: '#9AA3B2',
+  border: '#D6E6DB',
+  textPrimary: '#10271A',
+  textSecondary: '#3D5747',
+  textMuted: '#7A9083',
   white: '#FFFFFF',
 };
 
