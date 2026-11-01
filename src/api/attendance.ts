@@ -35,11 +35,9 @@ function normalizeRecord(raw: RawAttendance): AttendanceRecord {
   };
 }
 
-/** GET /api/Attendance/student/{studentId}?courseId={courseId} — newest first */
-export async function getCourseAttendance(studentId: string, courseId: string): Promise<AttendanceRecord[]> {
-  const { data } = await apiClient.get<RawAttendance[]>(`/api/Attendance/student/${studentId}`, {
-    params: { courseId },
-  });
+/** GET /api/Attendance/student/{studentId} — every subject, newest first */
+export async function getAllAttendance(studentId: string): Promise<AttendanceRecord[]> {
+  const { data } = await apiClient.get<RawAttendance[]>(`/api/Attendance/student/${studentId}`);
   return data.map(normalizeRecord);
 }
 

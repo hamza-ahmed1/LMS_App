@@ -20,18 +20,12 @@ function formatDueDate(value: string) {
   return date.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-/** Paid, overdue (past due date with a balance) or due. */
-function challanState(challan: FeeChallan): 'paid' | 'overdue' | 'due' {
-  if (challan.ispaid || challan.amountDue <= 0) return 'paid';
-  const due = new Date(challan.dueDate);
-  const endOfDueDay = new Date(due.getFullYear(), due.getMonth(), due.getDate(), 23, 59, 59);
-  return !Number.isNaN(due.getTime()) && endOfDueDay < new Date() ? 'overdue' : 'due';
-}
-
 const STATE_STYLE = {
-  paid: { label: 'Paid', color: colors.success },
-  due: { label: 'Unpaid', color: colors.warning },
-  overdue: { label: 'Overdue', color: colors.danger },
+  Paid: { label: 'Paid', color: colors.success },
+  Partial: { label: 'Partly paid', color: colors.warning },
+  Unpaid: { label: 'Unpaid', color: colors.warning },
+  Overdue: { label: 'Overdue', color: colors.danger },
+  Voided: { label: 'Cancelled', color: colors.textMuted },
 } as const;
 
 export default function FeeChalanScreen() {
@@ -67,7 +61,7 @@ export default function FeeChalanScreen() {
   const nextDue = useMemo(
     () =>
       challans
-        .filter((c) => challanState(c) !== 'paid')
+        .filter((c) => c.status !== 'Paid')
         .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0],
     [challans]
   );
@@ -115,10 +109,10 @@ export default function FeeChalanScreen() {
           <EmptyView icon="receipt-outline" message="No fee challans have been issued yet." />
         ) : (
           challans.map((challan) => {
-            const state = challanState(challan);
+            const state = challan.status;
             const { label, color } = STATE_STYLE[state];
             return (
-              <Card key={challan.id} style={state === 'overdue' ? { ...styles.card, ...styles.cardOverdue } : styles.card}>
+              <Card key={challan.id} style={state === 'Overdue' ? { ...styles.card, ...styles.cardOverdue } : styles.card}>
                 <View style={styles.rowBetween}>
                   <View style={styles.flex1}>
                     <Text style={styles.feeName}>{challan.feeTypeName || 'Fee'}</Text>
@@ -131,15 +125,17 @@ export default function FeeChalanScreen() {
 
                 <View style={styles.detailRow}>
                   <Detail icon="calendar-outline" label="Applicable month" value={`${challan.month} ${challan.year}`.trim()} />
-                  <Detail icon="alarm-outline" label="Due date" value={formatDueDate(challan.dueDate)} highlight={state === 'overdue' ? colors.danger : undefined} />
+                  <Detail icon="alarm-outline" label="Due date" value={formatDueDate(challan.dueDate)} highlight={state === 'Overdue' ? colors.danger : undefined} />
                 </View>
 
                 <View style={styles.amountRow}>
                   <View>
                     <Text style={styles.amountLabel}>Amount</Text>
-                    <Text style={styles.amount}>{formatCurrency(challan.amount, challan.currency)}</Text>
+                    <Text style={styles.amount}>{formatCurrency(challan.netAmount, challan.currency)}</Text>
+                    {challan.discount > 0 ? <Text style={styles.amountNote}>Includes {formatCurrency(challan.discount, challan.currency)} off</Text> : null}
+                    {challan.lateFee > 0 ? <Text style={styles.amountNote}>Includes {formatCurrency(challan.lateFee, challan.currency)} late fee</Text> : null}
                   </View>
-                  {challan.amountPaid > 0 && state !== 'paid' ? (
+                  {challan.amountPaid > 0 && state !== 'Paid' ? (
                     <View style={styles.alignRight}>
                       <Text style={styles.amountLabel}>Balance due</Text>
                       <Text style={[styles.amount, { color: colors.danger }]}>{formatCurrency(challan.amountDue, challan.currency)}</Text>
@@ -178,6 +174,7 @@ const styles = StyleSheet.create({
   totalHint: { ...typography.caption, color: 'rgba(255,255,255,0.85)', marginTop: spacing.xs },
   card: { marginBottom: spacing.sm },
   cardOverdue: { borderColor: colors.danger + '66' },
+  amountNote: { ...typography.small, color: colors.textMuted, marginTop: 2 },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   flex1: { flex: 1, paddingRight: spacing.sm },
   feeName: { ...typography.bodyBold, color: colors.textPrimary },

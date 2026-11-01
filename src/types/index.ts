@@ -122,9 +122,13 @@ export interface FeeChallan {
   invoiceNum: string;
   feeTypeName: string;
   amount: number;
+  discount: number;
+  lateFee: number;
+  netAmount: number;
   amountPaid: number;
   amountDue: number;
   ispaid: boolean;
+  status: 'Unpaid' | 'Partial' | 'Paid' | 'Overdue' | 'Voided';
   month: string;
   year: string;
   currency: string;
