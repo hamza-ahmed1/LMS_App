@@ -45,7 +45,7 @@ for /f "usebackq delims=" %%i in (`powershell -NoProfile -Command "(Get-NetIPCon
 if defined LAN_IP (
     set "REACT_NATIVE_PACKAGER_HOSTNAME=%LAN_IP%"
     echo Phone loads the app from: http://%LAN_IP%:8081
-    echo App calls the API at:     http://%LAN_IP%:5000  ^(the backend must be running on this PC^)
+    echo App calls the API at:     the Azure backend ^(set USE_LOCAL_API in src\config.ts to use this PC^)
 ) else (
     echo WARNING: Could not detect this PC's Wi-Fi/LAN address. Is Wi-Fi connected?
     echo The phone may not be able to load the app.

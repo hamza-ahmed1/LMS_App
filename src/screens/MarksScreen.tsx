@@ -6,8 +6,9 @@ import Card from '@/components/Card';
 import { LoadingView, ErrorView, EmptyView } from '@/components/StateViews';
 import { useAuth } from '@/context/AuthContext';
 import { getExamResults } from '@/api/marks';
+import { getStudentCourses } from '@/api/attendance';
 import { getApiErrorMessage } from '@/api/client';
-import { ExamResult } from '@/types';
+import { ExamResult, StudentCourse } from '@/types';
 import { colors, radius, spacing, typography } from '@/theme/theme';
 
 function scoreColor(pct: number) {
@@ -21,6 +22,7 @@ type CourseOption = { id: string; name: string; code?: string | null; count: num
 export default function MarksScreen() {
   const { student } = useAuth();
   const [results, setResults] = useState<ExamResult[]>([]);
+  const [enrolled, setEnrolled] = useState<StudentCourse[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +32,9 @@ export default function MarksScreen() {
     if (!student?.studentId) return;
     setError(null);
     try {
-      setResults(await getExamResults(student.studentId));
+      const [resultData, courseData] = await Promise.all([getExamResults(student.studentId), getStudentCourses(student.studentId)]);
+      setResults(resultData);
+      setEnrolled(courseData);
     } catch (err) {
       setError(getApiErrorMessage(err, 'Could not load your exam results.'));
     } finally {
@@ -48,9 +52,12 @@ export default function MarksScreen() {
     setRefreshing(false);
   }, [load]);
 
-  // One chip per course that has exams
+  // One chip per enrolled course, including courses that have no exams yet
   const courses = useMemo<CourseOption[]>(() => {
     const byId = new Map<string, CourseOption>();
+    enrolled.forEach((c) => {
+      if (!byId.has(c.courseId)) byId.set(c.courseId, { id: c.courseId, name: c.courseName || 'Course', code: c.courseCode, count: 0 });
+    });
     results.forEach((r) => {
       const id = r.exam.courseId;
       const existing = byId.get(id);
@@ -58,7 +65,7 @@ export default function MarksScreen() {
       else byId.set(id, { id, name: r.exam.courseName || 'Course', code: r.exam.courseCode, count: 1 });
     });
     return Array.from(byId.values()).sort((a, b) => a.name.localeCompare(b.name));
-  }, [results]);
+  }, [enrolled, results]);
 
   const visible = selectedCourse === 'all' ? results : results.filter((r) => r.exam.courseId === selectedCourse);
 

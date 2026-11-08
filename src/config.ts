@@ -4,42 +4,33 @@ import Constants from 'expo-constants';
  * ============================================================
  *  EDIT THIS FILE TO POINT THE APP AT YOUR BACKEND
  * ============================================================
- * `http://localhost:5000` (from the requirements doc) only works
- * when the API and the app are running on the exact same machine
- * in a browser. On a phone, an emulator, or Expo Go, "localhost"
- * means the device itself, not your dev machine, so it will fail.
+ * The app uses the deployed Azure API by default, in development and release builds.
  *
- * Replace the value below with one of:
- *   - Your computer's LAN IP, e.g. "http://192.168.1.50:5000"
- *     (same Wi-Fi network as your phone/emulator)
- *   - "http://10.0.2.2:5000" if you're using the Android Studio
- *     emulator specifically (it maps to your host machine)
- *   - Your real deployed API URL, e.g. "https://api.eduverse.com"
- *
- * Find your LAN IP:
- *   Windows:  ipconfig            -> "IPv4 Address"
- *   Mac/Linux: ifconfig | grep inet
+ * To test against the backend running on this PC instead, set USE_LOCAL_API to true.
+ * The phone then calls the PC that serves the app through Expo (same Wi-Fi), on DEV_API_PORT.
+ * "localhost" would not work on a phone: it means the phone itself, not your PC.
  * ============================================================
  */
-const CONFIGURED_API_BASE_URL = 'http://192.168.1.2:5000';
+const DEPLOYED_API_BASE_URL = 'https://tcflmsapiv1-hmcfd9fgfxfafrcc.westus3-01.azurewebsites.net';
+
+const USE_LOCAL_API = false;
 
 /** Port the ASP.NET backend listens on (launchSettings "http" profile). */
 const DEV_API_PORT = 5000;
 
 /**
  * In development the phone already reaches this PC through the Expo dev server
- * (e.g. "192.168.1.6:8081"), so the API is assumed to run on that same machine.
- * This keeps working when the PC's IP changes. Release builds, or a dev server
- * reached via localhost/USB, use CONFIGURED_API_BASE_URL above.
+ * (e.g. "192.168.1.6:8081"), so a local API is assumed to run on that same machine.
+ * This keeps working when the PC's IP changes.
  */
 function apiUrlFromDevServer(): string | null {
-  if (!__DEV__) return null;
+  if (!USE_LOCAL_API || !__DEV__) return null;
   const host = Constants.expoConfig?.hostUri?.split(':')[0];
   if (!host || host === 'localhost' || host === '127.0.0.1') return null;
   return `http://${host}:${DEV_API_PORT}`;
 }
 
-export const API_BASE_URL = apiUrlFromDevServer() ?? CONFIGURED_API_BASE_URL;
+export const API_BASE_URL = (apiUrlFromDevServer() ?? DEPLOYED_API_BASE_URL).replace(/\/+$/, '');
 
 export const APP_NAME = 'TCF Campus';
 
